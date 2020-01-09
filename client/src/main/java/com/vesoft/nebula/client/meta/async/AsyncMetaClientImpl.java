@@ -54,7 +54,7 @@ public class AsyncMetaClientImpl extends AsyncAbstractClient implements AsyncMet
 
     @Override
     public int doConnect(List<HostAndPort> address) {
-        client = new MetaService.AsyncClient(protocolFactory, manager, transport);
+        client = new MetaService.AsyncClient(protocolFactory, manager, nonblockingTransport);
         return 0;
     }
 

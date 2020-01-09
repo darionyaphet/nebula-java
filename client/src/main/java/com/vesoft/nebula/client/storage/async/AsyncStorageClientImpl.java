@@ -17,7 +17,7 @@ import com.google.common.base.Optional;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.vesoft.nebula.HostAddr;
-import com.vesoft.nebula.client.meta.MetaClientImpl;
+import com.vesoft.nebula.client.meta.MetaClient;
 import com.vesoft.nebula.storage.StorageService;
 import com.vesoft.nebula.utils.AddressUtil;
 import java.io.IOException;
@@ -36,7 +36,7 @@ public class AsyncStorageClientImpl extends AsyncStorageClient {
 
     private Map<HostAddr, StorageService.AsyncClient> clientMap = new HashMap<>();
 
-    private MetaClientImpl metaClient;
+    private MetaClient metaClient;
     private TNonblockingTransport transport = null;
     private TAsyncClientManager manager;
     private Map<Integer, Map<Integer, HostAddr>> leaders = new HashMap<>();

@@ -6,8 +6,6 @@
 
 package com.vesoft.nebula;
 
-import com.facebook.thrift.TException;
-
 /**
  *
  */
@@ -35,7 +33,7 @@ public interface Client extends AutoCloseable {
     public static final int DEFAULT_CONNECTION_RETRY_SIZE = 3;
     public static final int DEFAULT_EXECUTION_RETRY_SIZE = 3;
 
-    public int connect() throws TException;
+    public int connect();
 
     public boolean isConnected();
 

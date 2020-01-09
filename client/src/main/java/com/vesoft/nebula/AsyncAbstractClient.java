@@ -12,13 +12,16 @@ import com.facebook.thrift.transport.TNonblockingTransport;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.vesoft.nebula.graph.ErrorCode;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public abstract class AsyncAbstractClient extends AbstractClient {
-    protected ListeningExecutorService service;
+    private ExecutorService executor = Executors.newFixedThreadPool(1);
+    protected ListeningExecutorService service = MoreExecutors.listeningDecorator(executor);
     protected TAsyncClientManager manager;
-    protected TNonblockingTransport transport;
+    protected TNonblockingTransport nonblockingTransport;
     protected TProtocolFactory protocolFactory;
 
     public AsyncAbstractClient(List<HostAndPort> addresses, int timeout,
@@ -36,21 +39,20 @@ public abstract class AsyncAbstractClient extends AbstractClient {
 
     @Override
     public int connect() {
-        service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
         int retry = connectionRetry;
         while (retry-- != 0) {
             int code = doConnect(addresses);
             if (code == 0) {
-                break;
+                return ErrorCode.SUCCEEDED;
             }
         }
-        return -1;
+        return ErrorCode.E_FAIL_TO_CONNECT;
     }
 
     @Override
     public void close() {
         service.shutdown();
-        transport.close();
+        nonblockingTransport.close();
         try {
             manager.stop();
         } catch (InterruptedException e) {

@@ -79,6 +79,7 @@ public abstract class AbstractClient implements Client {
 
     protected abstract int doConnect(List<HostAndPort> addresses);
 
+    @Override
     public int connect() {
         int retry = connectionRetry;
         while (retry-- != 0) {

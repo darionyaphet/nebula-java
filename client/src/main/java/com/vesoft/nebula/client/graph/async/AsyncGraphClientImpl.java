@@ -66,6 +66,7 @@ public class AsyncGraphClientImpl extends AsyncAbstractClient
 
     @Override
     public int doConnect(List<HostAndPort> addresses) {
+        LOGGER.info("AsyncGraphClientImpl doConnect");
         Random random = new Random(System.currentTimeMillis());
         int position = random.nextInt(addresses.size());
         HostAndPort address = addresses.get(position);
@@ -73,12 +74,12 @@ public class AsyncGraphClientImpl extends AsyncAbstractClient
         try {
             manager = new TAsyncClientManager();
             while (!manager.isRunning()) {
-                System.out.println("Waiting");
+                LOGGER.info("Waiting");
             }
             transport = new TNonblockingSocket(address.getHostText(),
                     address.getPort(), timeout);
             TProtocolFactory protocol = new TBinaryProtocol.Factory();
-            client = new GraphService.AsyncClient(protocol, manager, transport);
+            client = new GraphService.AsyncClient(protocol, manager, nonblockingTransport);
             AuthenticateCallback callback = new AuthenticateCallback();
             client.authenticate(user, password, callback);
             Optional<TBase> respOption = Optional.absent();
@@ -102,8 +103,8 @@ public class AsyncGraphClientImpl extends AsyncAbstractClient
             } else {
                 LOGGER.info(String.format("Auth not founded"));
             }
-        } catch (TTransportException tte) {
-            LOGGER.error("Connect failed: " + tte.getMessage());
+        } catch (TTransportException e) {
+            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (TException e) {
