@@ -11,6 +11,7 @@ import com.facebook.thrift.protocol.TCompactProtocol;
 import com.facebook.thrift.protocol.TProtocol;
 import com.facebook.thrift.transport.TSocket;
 import com.facebook.thrift.transport.TTransport;
+import com.facebook.thrift.transport.TTransportException;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -37,7 +38,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -77,7 +77,7 @@ public class StorageClientImpl extends AbstractClient implements StorageClient {
     }
 
     @Override
-    public int doConnect(List<HostAndPort> addresses) throws TException {
+    public int doConnect(List<HostAndPort> addresses) {
         for (HostAndPort address : addresses) {
             StorageService.Client client = doConnect(address);
             clients.put(address, client);
@@ -85,9 +85,13 @@ public class StorageClientImpl extends AbstractClient implements StorageClient {
         return 0;
     }
 
-    private StorageService.Client doConnect(HostAndPort address) throws TException {
+    private StorageService.Client doConnect(HostAndPort address) {
         TTransport transport = new TSocket(address.getHostText(), address.getPort(), timeout);
-        transport.open();
+        try {
+            transport.open();
+        } catch (TTransportException e) {
+            e.printStackTrace();
+        }
 
         TProtocol protocol = new TCompactProtocol(transport);
         return new StorageService.Client(protocol);
@@ -374,7 +378,7 @@ public class StorageClientImpl extends AbstractClient implements StorageClient {
      * Remove multi keys from part
      *
      * @param spaceName nebula space name
-     * @param keys  nebula keys
+     * @param keys      nebula keys
      * @return
      */
     @Override
@@ -801,14 +805,9 @@ public class StorageClientImpl extends AbstractClient implements StorageClient {
 
     private StorageService.Client connect(HostAndPort address) {
         if (!clients.containsKey(address)) {
-            try {
-                StorageService.Client client = doConnect(address);
-                clients.put(address, client);
-                return client;
-            } catch (TException e) {
-                LOGGER.error(e.getMessage());
-                return null;
-            }
+            StorageService.Client client = doConnect(address);
+            clients.put(address, client);
+            return client;
         } else {
             return clients.get(address);
         }

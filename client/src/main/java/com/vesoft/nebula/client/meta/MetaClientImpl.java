@@ -9,6 +9,7 @@ package com.vesoft.nebula.client.meta;
 import com.facebook.thrift.TException;
 import com.facebook.thrift.protocol.TCompactProtocol;
 import com.facebook.thrift.transport.TSocket;
+import com.facebook.thrift.transport.TTransportException;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
@@ -81,12 +82,16 @@ public class MetaClientImpl extends AbstractClient implements MetaClient {
     }
 
     @Override
-    public int doConnect(List<HostAndPort> addresses) throws TException {
+    public int doConnect(List<HostAndPort> addresses) {
         Random random = new Random(System.currentTimeMillis());
         int position = random.nextInt(addresses.size());
         HostAndPort address = addresses.get(position);
         transport = new TSocket(address.getHostText(), address.getPort(), timeout);
-        transport.open();
+        try {
+            transport.open();
+        } catch (TTransportException e) {
+            e.printStackTrace();
+        }
         protocol = new TCompactProtocol(transport);
         client = new MetaService.Client(protocol);
 

@@ -6,18 +6,13 @@
 
 package com.vesoft.nebula;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
-import com.facebook.thrift.TException;
 import com.facebook.thrift.protocol.TProtocol;
 import com.facebook.thrift.transport.TTransport;
-
+import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.InetAddresses;
 import com.vesoft.nebula.graph.ErrorCode;
-
-import java.util.ArrayList;
 import java.util.List;
 
 public abstract class AbstractClient implements Client {
@@ -82,9 +77,9 @@ public abstract class AbstractClient implements Client {
                 DEFAULT_CONNECTION_RETRY_SIZE, DEFAULT_EXECUTION_RETRY_SIZE);
     }
 
-    protected abstract int doConnect(List<HostAndPort> addresses) throws TException;
+    protected abstract int doConnect(List<HostAndPort> addresses);
 
-    public int connect() throws TException {
+    public int connect() {
         int retry = connectionRetry;
         while (retry-- != 0) {
             int code = doConnect(addresses);

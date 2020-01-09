@@ -6,7 +6,6 @@
 
 package com.vesoft.nebula;
 
-import com.facebook.thrift.TException;
 import com.facebook.thrift.async.TAsyncClientManager;
 import com.facebook.thrift.protocol.TProtocolFactory;
 import com.facebook.thrift.transport.TNonblockingTransport;
@@ -36,7 +35,7 @@ public abstract class AsyncAbstractClient extends AbstractClient {
     }
 
     @Override
-    public int connect() throws TException {
+    public int connect() {
         service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
         int retry = connectionRetry;
         while (retry-- != 0) {

@@ -28,7 +28,6 @@ import com.vesoft.nebula.graph.GraphService;
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,61 +65,51 @@ public class AsyncGraphClientImpl extends AsyncAbstractClient
     }
 
     @Override
-    public int doConnect(List<HostAndPort> address) throws TException {
-        return 0;
-    }
+    public int doConnect(List<HostAndPort> addresses) {
+        Random random = new Random(System.currentTimeMillis());
+        int position = random.nextInt(addresses.size());
+        HostAndPort address = addresses.get(position);
 
-    /**
-     * Connect to the Graph Services.
-     *
-     * @return The ErrorCode of status, 0 is succeeded.
-     */
-    @Override
-    public int connect() {
-        int retry = connectionRetry;
-        while (retry-- != 0) {
-            Random random = new Random(System.currentTimeMillis());
-            int position = random.nextInt(addresses.size());
-            HostAndPort address = addresses.get(position);
-
-            try {
-                manager = new TAsyncClientManager();
-                transport = new TNonblockingSocket(address.getHostText(),
-                        address.getPort(), timeout);
-                TProtocolFactory protocol = new TBinaryProtocol.Factory();
-                client = new GraphService.AsyncClient(protocol, manager, transport);
-                AuthenticateCallback callback = new AuthenticateCallback();
-                client.authenticate(user, password, callback);
-                Optional<TBase> respOption = Optional.absent();
-                while (!callback.checkReady()) {
-                    respOption = (Optional<TBase>) callback.getResult();
-                }
-                if (respOption.isPresent()) {
-                    AuthResponse result = (AuthResponse) respOption.get();
-                    if (result.getError_code() == ErrorCode.E_BAD_USERNAME_PASSWORD) {
-                        LOGGER.error("User name or password error");
-                        return ErrorCode.E_BAD_USERNAME_PASSWORD;
-                    }
-
-                    if (result.getError_code() != ErrorCode.SUCCEEDED) {
-                        LOGGER.error(String.format("Connect address %s failed : %s",
-                                address.toString(), result.getError_msg()));
-                    } else {
-                        sessionID = result.getSession_id();
-                        return ErrorCode.SUCCEEDED;
-                    }
-                } else {
-                    LOGGER.info(String.format("Auth not founded"));
-                }
-            } catch (TTransportException tte) {
-                LOGGER.error("Connect failed: " + tte.getMessage());
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (TException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        try {
+            manager = new TAsyncClientManager();
+            while (!manager.isRunning()) {
+                System.out.println("Waiting");
             }
+            transport = new TNonblockingSocket(address.getHostText(),
+                    address.getPort(), timeout);
+            TProtocolFactory protocol = new TBinaryProtocol.Factory();
+            client = new GraphService.AsyncClient(protocol, manager, transport);
+            AuthenticateCallback callback = new AuthenticateCallback();
+            client.authenticate(user, password, callback);
+            Optional<TBase> respOption = Optional.absent();
+            while (!callback.checkReady()) {
+                respOption = (Optional<TBase>) callback.getResult();
+            }
+            if (respOption.isPresent()) {
+                AuthResponse result = (AuthResponse) respOption.get();
+                if (result.getError_code() == ErrorCode.E_BAD_USERNAME_PASSWORD) {
+                    LOGGER.error("User name or password error");
+                    return ErrorCode.E_BAD_USERNAME_PASSWORD;
+                }
+
+                if (result.getError_code() != ErrorCode.SUCCEEDED) {
+                    LOGGER.error(String.format("Connect address %s failed : %s",
+                            address.toString(), result.getError_msg()));
+                } else {
+                    sessionID = result.getSession_id();
+                    return ErrorCode.SUCCEEDED;
+                }
+            } else {
+                LOGGER.info(String.format("Auth not founded"));
+            }
+        } catch (TTransportException tte) {
+            LOGGER.error("Connect failed: " + tte.getMessage());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (TException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
         return ErrorCode.E_FAIL_TO_CONNECT;
     }
@@ -161,44 +150,29 @@ public class AsyncGraphClientImpl extends AsyncAbstractClient
 
     @Override
     public ListenableFuture<Optional<ResultSet>> executeQuery(final String statement) {
-        return service.submit(new Callable<Optional<ResultSet>>() {
-            @Override
-            public Optional<ResultSet> call() throws Exception {
-                ExecuteCallback callback = new ExecuteCallback();
-                try {
-                    client.execute(sessionID, statement, callback);
-                } catch (TException e) {
-                    e.printStackTrace();
-                }
-                while (!callback.checkReady()) {
-                    Thread.sleep(100);
-                }
-                if (callback.getResult().isPresent()) {
-                    ExecutionResponse resp = (ExecutionResponse) callback.getResult().get();
-                    int code = resp.getError_code();
-                    if (code == ErrorCode.SUCCEEDED) {
-                        ResultSet rs = new ResultSet(resp.getColumn_names(), resp.getRows());
-                        return Optional.of(rs);
-                    } else {
-                        LOGGER.error("Execute error: " + resp.getError_msg());
-                        throw new NGQLException(code);
-                    }
+        return service.submit(() -> {
+            ExecuteCallback callback = new ExecuteCallback();
+            try {
+                client.execute(sessionID, statement, callback);
+            } catch (TException e) {
+                e.printStackTrace();
+            }
+            while (!callback.checkReady()) {
+                Thread.sleep(100);
+            }
+            if (callback.getResult().isPresent()) {
+                ExecutionResponse resp = (ExecutionResponse) callback.getResult().get();
+                int code = resp.getError_code();
+                if (code == ErrorCode.SUCCEEDED) {
+                    ResultSet rs = new ResultSet(resp.getColumn_names(), resp.getRows());
+                    return Optional.of(rs);
                 } else {
-                    return Optional.absent();
+                    LOGGER.error("Execute error: " + resp.getError_msg());
+                    throw new NGQLException(code);
                 }
+            } else {
+                return Optional.absent();
             }
         });
     }
-
-    @Override
-    public void close() {
-        service.shutdown();
-        transport.close();
-        try {
-            manager.stop();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
 }

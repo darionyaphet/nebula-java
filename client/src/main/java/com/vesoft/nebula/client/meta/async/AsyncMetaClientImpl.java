@@ -53,7 +53,7 @@ public class AsyncMetaClientImpl extends AsyncAbstractClient implements AsyncMet
     private Map<String, Integer> spaceNames;
 
     @Override
-    public int doConnect(List<HostAndPort> address) throws TException {
+    public int doConnect(List<HostAndPort> address) {
         client = new MetaService.AsyncClient(protocolFactory, manager, transport);
         return 0;
     }

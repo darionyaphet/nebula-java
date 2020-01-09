@@ -9,6 +9,7 @@ package com.vesoft.nebula.client.graph;
 import com.facebook.thrift.TException;
 import com.facebook.thrift.protocol.TCompactProtocol;
 import com.facebook.thrift.transport.TSocket;
+import com.facebook.thrift.transport.TTransportException;
 import com.google.common.net.HostAndPort;
 import com.vesoft.nebula.AbstractClient;
 import com.vesoft.nebula.graph.AuthResponse;
@@ -46,15 +47,24 @@ public class GraphClientImpl extends AbstractClient implements GraphClient {
     }
 
     @Override
-    public int doConnect(List<HostAndPort> addresses) throws TException {
+    public int doConnect(List<HostAndPort> addresses) {
         Random random = new Random(System.currentTimeMillis());
         int position = random.nextInt(addresses.size());
         HostAndPort address = addresses.get(position);
         transport = new TSocket(address.getHostText(), address.getPort(), timeout);
-        transport.open();
+        try {
+            transport.open();
+        } catch (TTransportException e) {
+            e.printStackTrace();
+        }
         protocol = new TCompactProtocol(transport);
         client = new GraphService.Client(protocol);
-        AuthResponse result = client.authenticate(user, password);
+        AuthResponse result = null;
+        try {
+            result = client.authenticate(user, password);
+        } catch (TException e) {
+            e.printStackTrace();
+        }
         if (result.getError_code() == ErrorCode.E_BAD_USERNAME_PASSWORD) {
             LOGGER.error("User name or password error");
             return ErrorCode.E_BAD_USERNAME_PASSWORD;
