@@ -8,6 +8,7 @@ package com.vesoft.nebula.client.graph;
 
 import com.facebook.thrift.TException;
 import com.vesoft.nebula.auth.AuthProvider;
+import com.vesoft.nebula.sentence.Sentence;
 
 /**
  * Currently, The GraphClient is not thread safe.
@@ -32,6 +33,8 @@ public interface GraphClient extends AuthProvider, AutoCloseable {
      */
     public int execute(String statement);
 
+    public int execute(Sentence sentence);
+
     /**
      * Execute the query statement and return result set.
      *
@@ -42,5 +45,8 @@ public interface GraphClient extends AuthProvider, AutoCloseable {
      * @throws TException          the thrift exception
      */
     public ResultSet executeQuery(String statement)
+            throws ConnectionException, NGQLException, TException;
+
+    public ResultSet executeQuery(Sentence sentence)
             throws ConnectionException, NGQLException, TException;
 }

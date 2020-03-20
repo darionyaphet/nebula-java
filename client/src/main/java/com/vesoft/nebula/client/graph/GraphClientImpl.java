@@ -11,6 +11,7 @@ import com.facebook.thrift.protocol.TCompactProtocol;
 import com.facebook.thrift.transport.TSocket;
 import com.google.common.net.HostAndPort;
 import com.vesoft.nebula.AbstractClient;
+import com.vesoft.nebula.sentence.Sentence;
 import com.vesoft.nebula.graph.AuthResponse;
 import com.vesoft.nebula.graph.ErrorCode;
 import com.vesoft.nebula.graph.ExecutionResponse;
@@ -115,6 +116,11 @@ public class GraphClientImpl extends AbstractClient implements GraphClient {
         return ErrorCode.E_RPC_FAILURE;
     }
 
+    @Override
+    public int execute(Sentence sentence) {
+        return 0;
+    }
+
     /**
      * Execute the query sentence which will return a ResultSet.
      *
@@ -140,6 +146,11 @@ public class GraphClientImpl extends AbstractClient implements GraphClient {
             LOGGER.error("Execute error: " + executionResponse.getError_msg());
             throw new NGQLException(code);
         }
+    }
+
+    @Override
+    public ResultSet executeQuery(Sentence sentence) throws ConnectionException, NGQLException, TException {
+        return null;
     }
 
 
